@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simple To-Do</title>
+<style>
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+  }
+  .input-group {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  input[type="text"] {
+    flex-grow: 1;
+    padding: 0.5rem;
+    font-size: 1rem;
+  }
+  button {
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+  li {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #eee;
+  }
+  input[type="checkbox"] {
+    margin-right: 0.75rem;
+    transform: scale(1.2);
+  }
+  li.checked span {
+    text-decoration: line-through;
+    color: #888;
+  }
+</style>
+</head>
+<body>
+
+  <h2>To-Do List</h2>
+  <div class="input-group">
+    <input type="text" id="new-item" placeholder="Add a new task..." onkeypress="handleKeyPress(event)">
+    <button onclick="addItem()">Add</button>
+  </div>
+  <ul id="list"></ul>
+
+  <script>
+    const STORAGE_KEY = 'simple_todo_items';
+    const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+    
+    let todos = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+
+    function saveAndRender() {
+      const now = Date.now();
+      
+      todos = todos.filter(todo => {
+        if (!todo.checked) return true;
+        return (now - todo.checkedAt) < TWENTY_FOUR_HOURS_MS;
+      });
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+      
+      const list = document.getElementById('list');
+      list.innerHTML = '';
+      
+      todos.forEach((todo, index) => {
+        const li = document.createElement('li');
+        if (todo.checked) li.className = 'checked';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = todo.checked;
+        checkbox.onchange = () => toggleCheck(index, checkbox.checked);
+
+        const span = document.createElement('span');
+        span.textContent = todo.text;
+
+        li.appendChild(checkbox);
+        li.appendChild(span);
+        list.appendChild(li);
+      });
+    }
+
+    function addItem() {
+      const input = document.getElementById('new-item');
+      const text = input.value.trim();
+      
+      if (text !== '') {
+        todos.push({ 
+          text: text, 
+          checked: false, 
+          checkedAt: null 
+        });
+        input.value = '';
+        saveAndRender();
+      }
+    }
+
+    function handleKeyPress(event) {
+      if (event.key === 'Enter') {
+        addItem();
+      }
+    }
+
+    function toggleCheck(index, isChecked) {
+      todos[index].checked = isChecked;
+      todos[index].checkedAt = isChecked ? Date.now() : null;
+      saveAndRender();
+    }
+
+    setInterval(saveAndRender, 60000);
+    saveAndRender();
+  </script>
+</body>
+</html>
